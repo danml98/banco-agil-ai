@@ -1,3 +1,16 @@
 import os
+from dotenv import load_dotenv
 
-CAMINHO_BASE_CLIENTES = "src/data/clientes.csv"
+load_dotenv()  
+
+#### Base Clientes
+CAMINHO_BASE_CLIENTES = "data/clientes.csv"
+
+#### API Gemini
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+#### Autenticação
+TENTATIVAS_AUTENTICACAO = 2
+
+#### Logs
+LOG_DIR = "logs"

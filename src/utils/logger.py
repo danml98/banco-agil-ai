@@ -1,8 +1,8 @@
 import os
 from datetime import datetime
+from config.settings import LOG_DIR
 
 
-LOG_DIR = "src/logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
 def _obter_caminho_log():

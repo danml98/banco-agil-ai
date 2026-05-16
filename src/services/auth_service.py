@@ -1,7 +1,7 @@
 from datetime import datetime
 import pandas as pd
-from src.config import settings
-from src.utils.logger import log
+from config import settings
+from utils.logger import log
 
 
 class AuthService:
@@ -60,6 +60,16 @@ class AuthService:
             }
         
         cliente = cliente.iloc[0]
+
+        if data_nascimento is None:
+            mensagem = f"Data de nascimento em formato inválido"
+            log(mensagem, "WARN")
+
+            return {
+                "status_autenticacao": False, 
+                "mensagem": mensagem,
+                "dados_cliente": None
+            }
 
         data_nascimento = self._normalizar_data(data_nascimento)
         data_nascimento_registro = self._normalizar_data(cliente["data_nascimento"])
