@@ -1,5 +1,5 @@
 from agents.triagem_agent import TriagemAgent
-from config.settings import TENTATIVAS_AUTENTICACAO
+from config.variables import TENTATIVAS_AUTENTICACAO
 import re
 import streamlit as st
 
@@ -20,12 +20,15 @@ class ChatInterface:
                     }
                 ],
                 "cpf_digitado": None,
-                "data_digitada": None,
+                "data_nascimento_digitada": None,
                 "tentativas": 0,
                 "autenticado": False,
                 "dados_cliente": None,
-                "agente_atual": "ia_triagem",
-                "passo_triagem": "COLETANDO_CPF"
+                "agente_atual": "autenticacao",
+                "passo_triagem": "COLETANDO_CPF",
+                "passo_entrevista": None,
+                "respostas_entrevista": {},
+                "entrevista_realizada": False
             }
 
     def display_chat(self):
@@ -54,31 +57,39 @@ class ChatInterface:
         fase = st.session_state.state_grafo.get("passo_triagem", "COLETANDO_CPF")
         autenticado = st.session_state.state_grafo.get("autenticado", False)
         tentativas = st.session_state.state_grafo.get("tentativas", 0)
+        agente_atual = st.session_state.state_grafo.get("agente_atual")
 
-        if tentativas >= TENTATIVAS_AUTENTICACAO and not autenticado:
-            placeholder_texto = "🔒 Atendimento encerrado por excesso de tentativas."
+        if (tentativas > TENTATIVAS_AUTENTICACAO and not autenticado) or agente_atual == "encerrar":
+            if agente_atual == "encerrar":
+                placeholder_texto = "Você encerrou este atendimento"
+            else:
+                placeholder_texto = "Atendimento encerrado por excesso de tentativas de autenticação."
             st.chat_input(placeholder_texto, disabled=True) 
             return 
 
         if not autenticado:
             placeholder_texto = "Digite seu CPF..." if fase == "COLETANDO_CPF" else "Digite sua Data de Nascimento (DD/MM/AAAA)..." 
-            max_chars = 11 if fase == "COLETANDO_CPF" else 10
+            # Aumentamos para 14 para permitir que o usuário digite com máscara (ex: 000.000.000-00)
+            max_chars = 14 if fase == "COLETANDO_CPF" else 10
         else:
-            dados = st.session_state.state_grafo.get('dados_cliente') or {}
-            nome_completo = dados.get('nome', 'Cliente')
-            placeholder_texto = f"{nome_completo.split()[0]}, já identifiquei o seu cadastro. Como posso ajuda-lo hoje?"
+            if agente_atual == "credito":
+                placeholder_texto = "Digite o valor ou escolha uma opção..."
+            elif agente_atual == "agente_entrevista":
+                placeholder_texto = "Responda à pergunta acima..."
+            else:
+                placeholder_texto = "Digite sua solicitação (ex: crédito, câmbio)..."
             max_chars = None
 
         user_input = st.chat_input(placeholder_texto, max_chars=max_chars)
         
-        # Script para focar automaticamente no chat assim que a janela carregar
-        st.components.v1.html(
+        # foca automaticamente no chat assim que a janela carregar
+        st.iframe(
             """
             <script>
                 window.parent.document.querySelector('textarea[data-testid="stChatInputTextArea"]').focus();
             </script>
             """,
-            height=0, 
+            height=1, 
         )
 
         if user_input:
@@ -86,14 +97,29 @@ class ChatInterface:
                 st.write(user_input)
             st.session_state.state_grafo["messages"].append({"role": "user", "content": user_input})
                 
+            # Interceptação global de encerramento antes de processar fases de autenticação
+            if user_input.strip().lower() == "encerrar":
+                self._disparar_grafo_agentes()
+                return
+
             if not autenticado:
                 if fase == "COLETANDO_CPF":
-                    st.session_state.state_grafo["cpf_digitado"] = user_input.strip()
+                    # Remove caracteres não numéricos para validar apenas os dígitos
+                    cpf_limpo = "".join(filter(str.isdigit, user_input))
+
+                    if len(cpf_limpo) != 11:
+                        st.session_state.state_grafo["messages"].append({
+                            "role": "assistant",
+                            "content": "O CPF deve conter exatamente 11 números. Por favor, informe seu CPF novamente:"
+                        })
+                        st.rerun()
+
+                    st.session_state.state_grafo["cpf_digitado"] = cpf_limpo
                     st.session_state.state_grafo["passo_triagem"] = "COLETANDO_DATA_NASCIMENTO"
 
                     st.session_state.state_grafo["messages"].append({
                         "role": "assistant",
-                        "content": "Agora, informe sua **data de nascimento no formato DD/MM/AAAA** (Exemplo: 10/10/1990):"
+                        "content": "Agora, informe sua data de nascimento no formato DD/MM/AAAA (Exemplo: 10/10/1990):"
                     })
                     st.rerun()
                 
@@ -109,9 +135,7 @@ class ChatInterface:
                         })
                         st.rerun()
 
-                    st.session_state.state_grafo["data_digitada"] = data_digitada
-                    # Reseta o passo caso precise coletar novamente, em caso de falha na autenticação
-                    st.session_state.state_grafo["passo_triagem"] = "COLETANDO_CPF" 
+                    st.session_state.state_grafo["data_nascimento_digitada"] = data_digitada
 
                     self._disparar_grafo_agentes()
             else:
