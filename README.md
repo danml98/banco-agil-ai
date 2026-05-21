@@ -1,14 +1,14 @@
 # Banco Ágil AI
 
-Sistema de atendimento bancário inteligente utilizando agentes de IA para autenticação, análise de crédito, entrevista financeira e consulta de câmbio.
+Sistema de atendimento bancário inteligente orquestrado via **LangGraph**, utilizando agentes de IA (Gemini) para autenticação, análise de crédito, entrevista financeira e consulta de câmbio.
 
 ---
 
 # Visão Geral
 
-O projeto simula o fluxo de atendimento de um banco digital fictício chamado Banco Ágil, utilizando múltiplos agentes especializados para atender diferentes demandas dos clientes.
+O projeto simula o fluxo de atendimento de um banco digital fictício chamado Banco Ágil. A inteligência do sistema é baseada em um grafo de estados onde cada agente atua como um **Nó (Node)**, e as transições são decididas por um **Roteador (Router)** central.
 
-Os agentes trabalham de forma integrada, proporcionando uma experiência contínua para o usuário.
+A solução utiliza o modelo **Gemini** para interpretação de intenções e extração de dados estruturados via Pydantic.
 
 ---
 
@@ -21,11 +21,11 @@ Os agentes trabalham de forma integrada, proporcionando uma experiência contín
 
 ## Agente de Crédito
 - Consulta de limite de crédito
-- Solicitação de aumento de limite
+- Solicitação de aumento de limite via processamento de linguagem natural
 - Aprovação/reprovação baseada no score
 
 ## Agente de Entrevista de Crédito
-- Coleta de dados financeiros
+- Coleta dinâmica de dados financeiros (Slot Filling)
 - Recalculo de score
 - Atualização da base de clientes
 
@@ -38,15 +38,13 @@ Os agentes trabalham de forma integrada, proporcionando uma experiência contín
 # Arquitetura do Sistema
 
 ```text
-UI (Streamlit)
-    ↓
-Router Central
-    ↓
-Agentes Especializados
-    ↓
-Services
-    ↓
-CSV / APIs Externas
+UI (Streamlit) ↔ StateGraph (LangGraph)
+                    ↓
+            [Flow Router (Logic)]
+            ↙       ↓       ↘
+    [Triagem]   [Crédito]   [Câmbio]
+        ↓           ↓           ↓
+    [Gemini]    [Gemini]    [API Externa]
 ```
 
 ## Estrutura de Pastas
@@ -57,9 +55,8 @@ src/
 ├── services/
 ├── utils/
 ├── data/
-├── prompts/
 ├── ui/
-└── main.py
+└── app.py
 ```
 
 ---
@@ -68,9 +65,10 @@ src/
 
 - Python
 - Streamlit
+- LangGraph
+- Pydantic
 - Gemini API
 - Pandas
-- CSV
 - Requests
 
 ---
@@ -82,15 +80,6 @@ O sistema foi desenvolvido utilizando uma arquitetura modular baseada em agentes
 A escolha do Streamlit foi realizada visando simplicidade, rapidez de desenvolvimento e facilidade de demonstração.
 
 As regras de negócio críticas foram implementadas diretamente em código, evitando dependência exclusiva do LLM para validações importantes.
-
----
-
-# Desafios Enfrentados
-
-- Gerenciamento de estado conversacional no Streamlit
-- Roteamento implícito entre agentes
-- Persistência de dados em CSV
-- Tratamento de erros em APIs externas
 
 ---
 
@@ -117,7 +106,7 @@ GEMINI_API_KEY=sua_chave
 ## Execute o projeto
 
 ```bash
-streamlit run src/main.py
+streamlit run app.py
 ```
 
 ---

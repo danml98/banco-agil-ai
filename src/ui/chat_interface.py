@@ -11,6 +11,9 @@ class ChatInterface:
         self._inicializar_memoria_estavel()
 
     def _inicializar_memoria_estavel(self):
+        """
+        Inicializa o estado do grafo na sessão do Streamlit, garantindo que o histórico de mensagens e os dados de autenticação sejam preservados durante a interação.
+        """
         if "state_grafo" not in st.session_state:
             st.session_state.state_grafo = {
                 "messages": [
@@ -69,11 +72,10 @@ class ChatInterface:
 
         if not autenticado:
             placeholder_texto = "Digite seu CPF..." if fase == "COLETANDO_CPF" else "Digite sua Data de Nascimento (DD/MM/AAAA)..." 
-            # Aumentamos para 14 para permitir que o usuário digite com máscara (ex: 000.000.000-00)
             max_chars = 14 if fase == "COLETANDO_CPF" else 10
         else:
-            if agente_atual == "credito":
-                placeholder_texto = "Digite o valor ou escolha uma opção..."
+            if agente_atual == "credito" or agente_atual == "cambio":
+                placeholder_texto = "Digite sua resposta..."
             elif agente_atual == "agente_entrevista":
                 placeholder_texto = "Responda à pergunta acima..."
             else:
