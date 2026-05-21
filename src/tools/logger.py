@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from config.settings import LOG_DIR
+from config.variables import LOG_DIR
 
 
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -37,5 +37,7 @@ def log(message: str, level: str = "LOG"):
 
     with open(file_path, "a", encoding="utf-8") as f:
         f.write(linha)
+
+    print(linha.strip())
 
     return entrada

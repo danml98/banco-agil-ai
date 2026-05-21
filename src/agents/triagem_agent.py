@@ -1,11 +1,11 @@
-from config.prompts import PromptsTriagem
+from datetime import datetime
 import enum
+from typing import Optional
 from pydantic import BaseModel, Field
-from config.settings import TENTATIVAS_AUTENTICACAO
-from services.auth_service import AuthService
+from config.variables import TENTATIVAS_AUTENTICACAO, CAMINHO_BASE_CLIENTES
 from services.gemini_service import GeminiService
-from utils.logger import log
-
+from tools.logger import log
+from tools.utils import ler_csv
 
 class Intencao(str, enum.Enum):
     CREDITO = "credito"
@@ -16,92 +16,86 @@ class Intencao(str, enum.Enum):
 class AnaliseMensagem(BaseModel):
     intencao: Intencao = Field(description="A intenção principal do cliente baseada na mensagem.")
     detalhes: str = Field(description="Breve explicação de por que você tomou essa decisão.")
+    valor_extraido: Optional[float] = Field(None, description="O valor numérico solicitado pelo cliente, se mencionado (ex: 5000).")
+    deseja_aumento: bool = Field(False, description="Define como True se o cliente expressou explicitamente o desejo de aumentar o limite, mesmo sem citar valores.")
 
 class TriagemAgent:
+    INSTRUCOES = (
+        "Você é o motor de triagem do Banco Ágil. Categorize a mensagem em: credito, cambio, encerrar ou outro.\n"
+        "Extraia valores numéricos e identifique se há desejo de aumento de limite.\n"
+        "Se o cliente aceitar um valor oferecido (ex: 'aceito os 6'), extraia o valor total (ex: 6000)."
+    )
+
     def __init__(self):
-        self._authcliente = AuthService()
-        self.max_tentativas_autenticacao = TENTATIVAS_AUTENTICACAO
         self._gemini_service = GeminiService()
-        self.instrucao_sistema = PromptsTriagem.INSTRUCAO_SISTEMA
+
+    def _normalizar_data(self, data: str):
+        for fmt in ["%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%Y/%m/%d"]:
+            try: return datetime.strptime(data, fmt).date()
+            except (ValueError, TypeError): continue
+        return None
 
     def saudacao(self):
-        """ Retorna a mensagem de saudação
-
-        Returns:
-            list: Linhas da mensagem de saudação
-        """
         return [
             "Olá, seja muito bem vindo ao atendimento do banco Agil!",
-            "Sou Agilia, assistente virtual do Banco Ágil. Para começarmos o atendimento com segurança, **por favor, digite o seu CPF (apenas números):**"
+            "Sou Agilia, assistente virtual do Banco Ágil.",
+            'Para encerrar o atendimento, basta digitar "encerrar" a qualquer momento.',
+            "Para começarmos o atendimento com segurança, por favor, digite o seu CPF:"
         ]
 
-    def validar_cpf(self, cpf: str):
-        """Valida se o CPF é válido
+    def autenticar_node(self, state: dict) -> dict:
+        if state.get("autenticado"): return {}
 
-        Args:
-            cpf (str): CPF do cliente
-        Returns:
-            dict: {
-                "status": bool,
-                "mensagem": str,
-                "dados_cliente": dict | None
-            }
-        """
+        cpf = state.get("cpf_digitado")
+        data_nasc = state.get("data_nascimento_digitada")
+        tentativas = state.get("tentativas", 0)
 
-        if len(cpf) != 11:
-            return False
-        return True
-    
-    def autenticacao(self, cpf: str, data_nascimento: str, tentativa: int):
-        dados_autenticacao = self._authcliente.autenticar(cpf, data_nascimento)
+        if state["messages"][-1].content.lower().strip() == "encerrar": return {"agente_atual": "encerrar"}
 
-        if not dados_autenticacao["status_autenticacao"]:
-            if tentativa >= self.max_tentativas_autenticacao:
-                dados_autenticacao["mensagem"] += f". Por favor, tente novamente. Tentatativa {tentativa + 1}/{self.max_tentativas_autenticacao}"
-                return dados_autenticacao
-            else:
-                dados_autenticacao["mensagem"] = f"Não foi possível concluir sua autenticação após {self.max_tentativas_autenticacao} tentativas. Por segurança, encerraremos esse atendimento, mas você pode tentar novamente mais tarde."
-                log(f"Cliente com CPF {cpf} atingiu o número máximo de tentativas de autenticação", "WARN")
-                return dados_autenticacao
-            
-        log(f"Cliente com CPF {cpf} autenticado com sucesso")
-        return dados_autenticacao
-    
-    def interpretar_solicitacao(self, mensagem: str):
-        """Interpreta a mensagem do cliente para identificar a intenção
+        # Busca cliente no CSV
+        base = ler_csv(CAMINHO_BASE_CLIENTES, dtype={"cpf": str})
+        cliente = base[base["cpf"] == "".join(filter(str.isdigit, cpf or ""))]
 
-        Args:
-            mensagem (str): Mensagem do cliente
+        if cliente.empty:
+            return self._falha_auth(tentativas, "CPF não encontrado", "cpf")
         
-        Returns:
-            dict: {
-                "intencao": Intencao,
-                "detalhes": str
-            }
-        """
+        cliente = cliente.iloc[0]
+        dt_user, dt_reg = self._normalizar_data(data_nasc), self._normalizar_data(cliente["data_nascimento"])
+
+        if dt_user != dt_reg:
+            return self._falha_auth(tentativas, "Data de nascimento incorreta", "data")
+
+        # Sucesso
+        nome = cliente.get("nome", "Cliente").split()[0]
+        return {
+            "autenticado": True,
+            "dados_cliente": cliente.to_dict(),
+            "agente_atual": "menu_principal",
+            "messages": [{"role": "assistant", "content": f"{nome}, identifiquei seu cadastro. Como posso ajuda-lo hoje?"}]
+        }
+
+    def _falha_auth(self, tent, msg, erro):
+        if tent >= TENTATIVAS_AUTENTICACAO - 1:
+            return {"agente_atual": "encerrar", "messages": [{"role": "assistant", "content": f"{msg}. Limite de tentativas excedido."}]}
         
+        res = {"tentativas": tent + 1, "passo_triagem": "COLETANDO_CPF" if erro == "cpf" else "COLETANDO_DATA_NASCIMENTO", 
+               "messages": [{"role": "assistant", "content": f"{msg}. Tente novamente ({tent + 1}/{TENTATIVAS_AUTENTICACAO}):"}]}
+        if erro == "cpf": res.update({"cpf_digitado": None, "data_nascimento_digitada": None})
+        return res
 
-        try:
-            log(f"Interpretando a mensagem do cliente: {mensagem}")
+    def triagem_node(self, state: dict) -> dict:
+        msg = state["messages"][-1].content
+        analise = self.interpretar_solicitacao(msg)
 
-            resposta = self._gemini_service.gerar_resposta(
-                prompt=f"Mensagem do cliente: {mensagem}",
-                system_instruction=self.instrucao_sistema,
-                schema=AnaliseMensagem
-            )
-
-            if resposta is None:
-                log("Não foi possível interpretar a solicitação do cliente", "ERROR")
-                return {
-                    "intencao": Intencao.OUTRO,
-                    "detalhes": "Não foi possível interpretar a solicitação do cliente"
-                }
-
-            log(f"Intenção identificada: {resposta['intencao']}")
-            return resposta
-        except Exception as e:
-            log(f"Erro ao interpretar a mensagem do cliente: {str(e)}", "ERROR")
+        if analise["intencao"] == Intencao.OUTRO:
             return {
-                "intencao": Intencao.OUTRO,
-                "detalhes": "Não foi possível interpretar a solicitação do cliente"
+                "agente_atual": "menu_principal",
+                "messages": [{"role": "assistant", "content": "Não identifiquei sua solicitação. Pode repetir?"}]
             }
+
+        return {"agente_atual": analise["intencao"].value, "valor_solicitado": analise.get("valor_extraido"), "intencao_aumento": analise.get("deseja_aumento", False)}
+
+    def interpretar_solicitacao(self, mensagem: str, contexto: str = ""):
+        prompt = f"Contexto: {contexto}\n\nMensagem: {mensagem}" if contexto else f"Mensagem: {mensagem}"
+        resposta = self._gemini_service.gerar_resposta(prompt, self.INSTRUCOES, AnaliseMensagem)
+        return resposta.model_dump() if resposta else {"intencao": Intencao.OUTRO, "detalhes": "Erro na IA", "valor_extraido": None, "deseja_aumento": False}
