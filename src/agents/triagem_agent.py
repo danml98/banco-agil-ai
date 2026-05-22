@@ -52,7 +52,6 @@ class TriagemAgent:
 
         if state["messages"][-1].content.lower().strip() == "encerrar": return {"agente_atual": "encerrar"}
 
-        # Busca cliente no CSV
         base = ler_csv(CAMINHO_BASE_CLIENTES, dtype={"cpf": str})
         cliente = base[base["cpf"] == "".join(filter(str.isdigit, cpf or ""))]
 
@@ -65,7 +64,6 @@ class TriagemAgent:
         if dt_user != dt_reg:
             return self._falha_auth(tentativas, "Data de nascimento incorreta", "data")
 
-        # Sucesso
         nome = cliente.get("nome", "Cliente").split()[0]
         return {
             "autenticado": True,

@@ -52,7 +52,6 @@ def flow_router(state: AgentChatContext) -> str:
         str: O nome do próximo nó a ser executado, ou END para finalizar o fluxo."""
     msg = state["messages"][-1]
     
-    # Acesso seguro: Objetos do LangGraph usam atributos, dicionários (Streamlit) usam .get()
     if hasattr(msg, 'content'):
         role = getattr(msg, 'type', 'ai')
         content = msg.content.lower().strip()
@@ -76,6 +75,5 @@ def flow_router(state: AgentChatContext) -> str:
     if agente == "menu_principal":
         return "ia_triagem"
 
-    # Mapeamento simples de intenção para nome de nó
     mapping = {Intencao.CREDITO.value: "agente_credito", Intencao.CAMBIO.value: "agente_cambio"}
     return mapping.get(agente, agente)

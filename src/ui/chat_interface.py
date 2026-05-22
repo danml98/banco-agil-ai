@@ -46,9 +46,7 @@ class ChatInterface:
             elif hasattr(msg, 'role'):
                 role = msg.role
             else:
-                # Se for dicionário comum do Python
                 role = msg.get("role", "assistant")
-                # Se o LangGraph salvou como 'ai', converte para o visual do Streamlit
                 if role == "ai": role = "assistant"
 
             content = msg.content if hasattr(msg, 'content') else msg.get("content", "")
@@ -99,14 +97,13 @@ class ChatInterface:
                 st.write(user_input)
             st.session_state.state_grafo["messages"].append({"role": "user", "content": user_input})
                 
-            # Interceptação global de encerramento antes de processar fases de autenticação
+            # Interceptação global de encerramento 
             if user_input.strip().lower() == "encerrar":
                 self._disparar_grafo_agentes()
                 return
 
             if not autenticado:
                 if fase == "COLETANDO_CPF":
-                    # Remove caracteres não numéricos para validar apenas os dígitos
                     cpf_limpo = "".join(filter(str.isdigit, user_input))
 
                     if len(cpf_limpo) != 11:

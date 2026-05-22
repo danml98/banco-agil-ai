@@ -45,8 +45,7 @@ class CreditoAgent:
         if intencao == "encerrar":
             return {"agente_atual": "encerrar", "passo_credito": None}
         
-        # Handoff Imediato: Se o usuário mudar de assunto (ex: câmbio), 
-        # saímos do fluxo de crédito sem mensagens intermediárias.
+        # Handoff Imediato: Se o usuário mudar de assunto (ex: câmbio)
         if intencao not in ["credito", "outro"]:
             return {"agente_atual": intencao, "passo_credito": None, "valor_solicitado": None}
 

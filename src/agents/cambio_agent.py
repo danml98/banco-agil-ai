@@ -43,11 +43,10 @@ class CambioAgent:
         analise_triagem = self.triagem.interpretar_solicitacao(ultima_msg, contexto_anterior)
         
         # Só sai do agente se for uma mudança explícita de assunto (ex: crédito)
-        # Se for "outro", tentamos processar aqui mesmo no câmbio (pode ser uma correção contextual)
+        # Se for "outro", tentamos processa aqui mesmo no câmbio (pode ser uma correção contextual)
         if analise_triagem["intencao"].value not in ["cambio", "outro"]:
             return {"agente_atual": "menu_principal"}
 
-        # Monta histórico curto para o Gemini entender correções como "é o contrário"
         historico_lista = []
         for m in state["messages"][-5:]:
             role = "Assistente" if getattr(m, 'type', '') == 'ai' or (isinstance(m, dict) and m.get('role') == 'assistant') else "Usuário"
@@ -114,12 +113,12 @@ class CambioAgent:
                 # Cliente tem X reais, quer saber quantos Euros dá.
                 valor_convertido = valor / cotacao
                 msg = f"A cotação atual do {destino.upper()} para {origem.upper()} é {formatar_moeda(cotacao)}.\n\n"
-                msg += f"Com {formatar_moeda(valor)}, você consegue adquirir aproximadamente **{valor_convertido:.2f} {destino.upper()}**."
+                msg += f"Com {formatar_moeda(valor)}, você consegue adquirir aproximadamente {valor_convertido:.2f} {destino.upper()}."
             else:
                 # Cliente quer saber quanto custa X Euros.
                 valor_convertido = valor * cotacao
                 msg = f"A cotação atual do {destino.upper()} para {origem.upper()} é {formatar_moeda(cotacao)}.\n\n"
-                msg += f"Para adquirir {valor:.2f} {destino.upper()}, você precisará de aproximadamente **{formatar_moeda(valor_convertido)}**."
+                msg += f"Para adquirir {valor:.2f} {destino.upper()}, você precisará de aproximadamente {formatar_moeda(valor_convertido)}."
             
             return msg
         except Exception as e:
