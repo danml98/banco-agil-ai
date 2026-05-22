@@ -61,7 +61,7 @@ class ChatInterface:
         agente_atual = st.session_state.state_grafo.get("agente_atual")
 
         if (tentativas > TENTATIVAS_AUTENTICACAO and not autenticado) or agente_atual == "encerrar":
-            if agente_atual == "encerrar" and autenticado:
+            if agente_atual == "encerrar" and tentativas < TENTATIVAS_AUTENTICACAO:
                 placeholder_texto = "Você encerrou este atendimento"
             else:
                 placeholder_texto = "Atendimento encerrado por excesso de tentativas de autenticação."
@@ -156,6 +156,6 @@ class ChatInterface:
         except Exception as e:
             st.session_state.state_grafo["messages"].append({
                 "role": "assistant",
-                "content": f"Desculpe-me, enfrentamos uma instabilidade técnica momentânea. Código de erro: {str(e)}"
+                "content": f"Desculpe-me, enfrentamos uma instabilidade técnica momentânea. Por favor, tente novamente, caso o problema persista, recarregue a página ou entre em contato com o suporte do Banco Ágil. (Erro: {str(e)})"
             })
         st.rerun()
