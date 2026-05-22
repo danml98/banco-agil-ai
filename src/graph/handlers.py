@@ -1,4 +1,5 @@
 from config.variables import TENTATIVAS_AUTENTICACAO
+from agents.triagem_agent import Intencao
 from typing import TypedDict, Annotated, Optional
 from langgraph.graph.message import add_messages
 
@@ -76,5 +77,5 @@ def flow_router(state: AgentChatContext) -> str:
         return "ia_triagem"
 
     # Mapeamento simples de intenção para nome de nó
-    mapping = {"credito": "agente_credito", "cambio": "agente_cambio"}
+    mapping = {Intencao.CREDITO.value: "agente_credito", Intencao.CAMBIO.value: "agente_cambio"}
     return mapping.get(agente, agente)
