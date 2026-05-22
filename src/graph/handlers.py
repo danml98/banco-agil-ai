@@ -20,7 +20,13 @@ class AgentChatContext(TypedDict):
     entrevista_realizada: bool
 
 def encerramento_node(state: AgentChatContext) -> dict:
-    """Handler final que envia a mensagem de despedida."""
+    """Handler final que envia a mensagem de despedida.
+    O conteúdo da mensagem varia dependendo se o cliente escolheu encerrar ou se foi forçado a encerrar após falha de autenticação.
+    Args:
+        state (AgentChatContext): O estado atual do chat, contendo o histórico de mensagens e informações do cliente.
+    Returns:
+        dict: Um dicionário contendo a mensagem de despedida e a indicação de que o agente atual é "encerrar".
+    """
     # Acesso seguro à última mensagem
     msg = state["messages"][-1] if state.get("messages") else None
     content = ""
@@ -38,7 +44,11 @@ def encerramento_node(state: AgentChatContext) -> dict:
     }
 
 def flow_router(state: AgentChatContext) -> str:
-    """Roteador do fluxo. Lê o estado atualizado e decide o próximo passo."""
+    """Roteador do fluxo. Lê o estado atualizado e decide o próximo passo.
+    Args:
+        state (AgentChatContext): O estado atual do chat, contendo o histórico de mensagens, informações do cliente e o agente atual.
+    Returns:
+        str: O nome do próximo nó a ser executado, ou END para finalizar o fluxo."""
     msg = state["messages"][-1]
     
     # Acesso seguro: Objetos do LangGraph usam atributos, dicionários (Streamlit) usam .get()

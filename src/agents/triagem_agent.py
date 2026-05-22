@@ -79,7 +79,7 @@ class TriagemAgent:
             return {"agente_atual": "encerrar", "messages": [{"role": "assistant", "content": f"{msg}. Limite de tentativas excedido."}]}
         
         res = {"tentativas": tent + 1, "passo_triagem": "COLETANDO_CPF" if erro == "cpf" else "COLETANDO_DATA_NASCIMENTO", 
-               "messages": [{"role": "assistant", "content": f"{msg}. Tente novamente ({tent + 1}/{TENTATIVAS_AUTENTICACAO}):"}]}
+                "messages": [{"role": "assistant", "content": f"{msg}. Tente novamente ({tent + 1}/{TENTATIVAS_AUTENTICACAO}):"}]}
         if erro == "cpf": res.update({"cpf_digitado": None, "data_nascimento_digitada": None})
         return res
 

@@ -26,23 +26,44 @@ def extrair_valor_monetario(texto: str):
     return None
 
 def formatar_moeda(valor: float) -> str:
-    """Formata valores monetários no padrão brasileiro."""
+    """Formata valores monetários no padrão brasileiro.
+
+    Args:
+        valor (float): Valor a ser formatado
+    Returns:
+        str: Valor formatado como string no formato brasileiro (ex: R$ 1.234,56)
+    """
     return f"R\$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 # CSV
 def criar_csv(caminho: str, colunas: list):
-    """Cria um arquivo CSV vazio com as colunas especificadas, se ele não existir."""
+    """Cria um arquivo CSV vazio com as colunas especificadas, se ele não existir.
+    Args:
+        caminho (str): Caminho do arquivo CSV a ser criado
+        colunas (list): Lista de nomes de colunas
+    """
     if not os.path.exists(caminho):
         df = pd.DataFrame(columns=colunas)
         df.to_csv(caminho, index=False)
 
 def ler_csv(caminho: str, dtype: dict = None, skipinitialspace: bool = False) -> pd.DataFrame:
-    """Le um CSV"""
+    """Le um CSV
+    Args:
+        caminho (str): Caminho do arquivo CSV a ser lido
+        dtype (dict, optional): Dicionário de tipos de dados para as colunas
+        skipinitialspace (bool, optional): Se deve pular espaços iniciais
+    Returns:
+        pd.DataFrame: DataFrame com os dados do CSV
+    """
     return pd.read_csv(caminho, dtype=dtype, skipinitialspace=skipinitialspace)
 
 def salvar_csv(caminho: str, dados: pd.DataFrame):
-    """Salva um csv"""
+    """Salva um csv
+    Args:
+        caminho (str): Caminho do arquivo CSV a ser salvo
+        dados (pd.DataFrame): DataFrame com os dados a serem salvos
+    """
     dados.to_csv(caminho, index=False)
 
 

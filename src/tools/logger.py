@@ -3,8 +3,6 @@ from datetime import datetime
 from config.variables import LOG_DIR
 
 
-os.makedirs(LOG_DIR, exist_ok=True)
-
 def _obter_caminho_log():
     """Cria arquivo por dia"""
     date = datetime.now().strftime("%d%m%Y")
