@@ -52,9 +52,11 @@ UI (Streamlit) ↔ StateGraph (LangGraph)
 ```text
 src/
 ├── agents/
-├── services/
-├── utils/
+├── config/
 ├── data/
+├── graph/
+├── services/
+├── tools/
 ├── ui/
 └── app.py
 ```
