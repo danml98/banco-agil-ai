@@ -85,6 +85,17 @@ As regras de negócio críticas foram implementadas diretamente em código, evit
 
 ---
 
+# Desafios e Soluções
+
+- **Extração de Dados Estruturados**: Garantir que o LLM retorne dados processáveis foi resolvido com o uso de **Pydantic Schemas**, forçando a IA a responder em JSON estruturado para alimentar o sistema.
+- **Persistência de Estado no Streamlit**: Como o Streamlit reinicia o script a cada interação, o estado completo do **LangGraph** foi armazenado no `st.session_state`, preservando o histórico e o progresso do atendimento.
+- **Transição entre Agentes**: A transição entre fluxos especializados (ex: de Crédito para Câmbio) foi gerenciada por um **Flow Router** central que interpreta a mudança de contexto via Agente de Triagem sem quebrar a experiência do usuário.
+- **Confiabilidade em Regras de Negócio**: Para evitar alucinações em cálculos financeiros, toda a lógica de **Score de Crédito** e persistência em CSV foi implementada via código, utilizando a IA apenas para extração de intenções e preenchimento de campos.
+- **Normalização de Dados**: O tratamento de diferentes formatos de entrada (CPFs com pontos, datas em diversos padrões) foi resolvido com funções auxiliares de limpeza e regex antes da validação final.
+- **Tratamento de erros**: Ao ocorrer um erro durante o processamento, o sistema exibe uma mensagem informativa ao usuário e registra o incidente em um arquivo JSON para análise interna.
+
+---
+
 # Como Executar
 
 ## Clone o projeto
