@@ -2,7 +2,7 @@ from agents.triagem_agent import TriagemAgent
 from agents.credito_agent import CreditoAgent
 from agents.entrevista_agent import EntrevistaAgent
 from agents.cambio_agent import CambioAgent
-from graph.handlers import AgentChatContext, encerramento_node, flow_router
+from graph.nodes import AgentChatContext, encerramento_node, flow_router
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, END
 from ui.chat_interface import ChatInterface
