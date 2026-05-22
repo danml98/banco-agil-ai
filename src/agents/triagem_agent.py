@@ -73,7 +73,7 @@ class TriagemAgent:
         }
 
     def _falha_auth(self, tent, msg, erro):
-        if tent >= TENTATIVAS_AUTENTICACAO - 1:
+        if tent >= TENTATIVAS_AUTENTICACAO:
             return {"agente_atual": "encerrar", "messages": [{"role": "assistant", "content": f"{msg}. Limite de tentativas excedido."}]}
         
         res = {"tentativas": tent + 1, "passo_triagem": "COLETANDO_CPF" if erro == "cpf" else "COLETANDO_DATA_NASCIMENTO", 

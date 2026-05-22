@@ -61,10 +61,12 @@ class ChatInterface:
         agente_atual = st.session_state.state_grafo.get("agente_atual")
 
         if (tentativas > TENTATIVAS_AUTENTICACAO and not autenticado) or agente_atual == "encerrar":
-            if agente_atual == "encerrar":
+            if agente_atual == "encerrar" and autenticado:
                 placeholder_texto = "Você encerrou este atendimento"
             else:
                 placeholder_texto = "Atendimento encerrado por excesso de tentativas de autenticação."
+                with st.chat_message('assistant'):
+                    st.write("Desculpe, mas excedemos o número máximo de tentativas de autenticação. Por questões de segurança, este atendimento será encerrado.\n\nO Banco Ágil agradece sua compreensão.")
             st.chat_input(placeholder_texto, disabled=True) 
             return 
 
